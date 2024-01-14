@@ -8,9 +8,9 @@ const playerData = inject('playerData'); //Agafem les dades del jugador desde Ap
 
 //Computed per a que quan canviïn les dades del jugador, es canviïn automàticament les dades que es mostren
 const playerName = computed(() => playerData.value ? playerData.value.player_ID : 'Nom Desconegut');
-const playerLevel = computed(() => playerData.value ? playerData.value.level : 'N/A');
-const playerXP = computed(() => playerData.value ? playerData.value.xp : 'N/A');
-const playerAvatar = computed(() => playerData.value ? playerData.value.img : '/src/assets/avatars/avatar1.png');
+const playerLevel = ref(0)
+const playerXP = ref(0);
+const playerAvatar = ref(null);
 
 const items = ref([]);
 
@@ -86,8 +86,56 @@ function loadPlayerStatistics() {
       });
 }
 
+const avatars = [
+  'src/assets/avatars/avatar1.png',
+  'src/assets/avatars/avatar2.png',
+  'src/assets/avatars/avatar3.png',
+  'src/assets/avatars/avatar4.png',
+  'src/assets/avatars/avatar5.png',
+  'src/assets/avatars/avatar6.png',
+  'src/assets/avatars/avatar7.png',
+  'src/assets/avatars/avatar8.png',
+  'src/assets/avatars/avatar9.png',
+  'src/assets/avatars/avatar10.png',
+];
+
+function getPlayerIndex(playerID) {
+  return Array.from(playerID).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+}
+
+function getRandomAvatar (playerID) {
+  let index = getPlayerIndex(playerID);
+  return avatars[index % avatars.length];
+}
+
+function loadPlayerData() {
+  fetch(`https://balandrau.salle.url.edu/i3/players/${playerName.value}`, {
+    headers: {
+      'Bearer': `${token.value}`,
+      'Content-Type': 'application/json'
+    }
+  })
+      .then(response => {
+        if (response.status === 200) {
+          return response.json();
+        } else {
+          console.error("Response error:", response);
+          throw response;
+        }
+      })
+      .then(data => {
+        playerLevel.value = data.level;
+        playerXP.value = data.xp;
+        playerAvatar.value = (data.img.match(/^https:\/\/[^\s,]+/) ? data.img : getRandomAvatar(data.player_ID))
+      })
+      .catch(error => {
+        console.error("Error fetching player data:", error);
+      });
+}
+
 onMounted(loadPlayerStatistics);
 onMounted(loadGames);
+onMounted(loadPlayerData);
 
 
 function goToStats(gameId) {
